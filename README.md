@@ -13,15 +13,16 @@
 
 1. [What it does](#what-it-does)
 2. [Functional specifications](#functional-specifications)
-3. [Quick start — install with an AI agent (Microsoft Scout / vibe coding)](#quick-start--install-with-an-ai-agent-microsoft-scout--vibe-coding)
+3. [Guided installation with Microsoft Scout](#guided-installation-with-microsoft-scout)
 4. [Manual install (humans)](#manual-install-humans)
 5. [Entra app registration (required)](#entra-app-registration-required)
 6. [Configuration](#configuration)
-7. [Architecture](#architecture)
-8. [Troubleshooting](#troubleshooting)
-9. [Security & distribution notes](#security--distribution-notes)
-10. [References](#references)
-11. [License](#license)
+7. [Security status — Next.js dependency](#security-status--nextjs-dependency)
+8. [Architecture](#architecture)
+9. [Troubleshooting](#troubleshooting)
+10. [Security & distribution notes](#security--distribution-notes)
+11. [References](#references)
+12. [License](#license)
 
 ---
 
@@ -83,52 +84,111 @@ Work IQ service requires.
 
 ---
 
-## Quick start — install with an AI agent (Microsoft Scout / vibe coding)
+## Guided installation with Microsoft Scout
 
-You can have an AI coding agent (Microsoft Scout, GitHub Copilot Chat,
-Claude, Cursor, etc.) clone and configure the app end-to-end. Open your
-agent and paste the prompt below.
+This project can be installed locally with **Microsoft Scout** or another AI
+coding agent (GitHub Copilot Chat, Claude, Cursor, …). The agent should
+guide you step by step and ask for confirmation **before** changing the
+machine.
 
-> **Prompt to paste in Microsoft Scout (or any AI coding agent):**
->
-> ```
-> Install the Work IQ API Demonstrator locally from
-> https://github.com/timoleo23/WorkIQ-API-Client.
->
-> Follow these steps:
-> 1. Clone the repo and run `npm install` at the project root.
-> 2. Copy .env.example to .env.local.
-> 3. Open a browser to https://entra.microsoft.com → App registrations →
->    "New registration":
->      - Name: "Work IQ API Demonstrator (local)"
->      - Supported account types: "Accounts in this organizational directory only"
->      - Redirect URI: Platform = "Single-page application",
->        URI = "http://localhost:3000/auth-callback"
->    Create the app, then on the new app's Overview page copy:
->      - "Application (client) ID"  →  fill NEXT_PUBLIC_ENTRA_CLIENT_ID in .env.local
->      - "Directory (tenant) ID"    →  fill NEXT_PUBLIC_ENTRA_TENANT_ID in .env.local
-> 4. In the app registration, go to "API permissions" → "Add a permission" →
->    "APIs my organization uses" → search for "Work IQ" (or paste GUID
->    0b1715fd-f4bf-4c63-b16d-5be31f9847c2) → Delegated permission
->    "WorkIQAgent.Ask" → Add.
-> 5. Click "Grant admin consent for <tenant>". This step requires a
->    Microsoft Entra **Global Administrator** (or Privileged Role Admin /
->    Cloud App Admin) account.
-> 6. Make sure the Work IQ service is enabled for the tenant — see
->    https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/work-iq/enable-work-iq
-> 7. Run `npm run dev` and open http://localhost:3000.
-> 8. Sign in with a tenant user that has Microsoft 365 data (mail, calendar,
->    Teams, OneDrive/SharePoint) — the same identity the AI service will
->    reason over.
->
-> Verify the install by sending a message on the /rest page; the assistant
-> should reply with a Markdown-formatted answer rendered in the chat bubble.
-> Do NOT commit .env.local. Do NOT change the redirect URI.
-> ```
+### Pre-flight questions the agent must confirm
 
-The agent should be able to complete steps 1, 2, 7, and 8 autonomously, and
-will guide you through steps 3–6 in the Entra portal (which require an
-interactive browser session and Global Admin privileges for consent).
+Before any file is written or any package installed, the agent must ask and
+confirm:
+
+1. **Where should the repo be cloned?**
+   - Default: the current workspace.
+   - Example: `C:\Users\<user>\Documents\WorkIQ-API-Client`
+2. **Can missing dependencies be installed?**
+   - Required: **Node.js 20+**, **npm**, **git**.
+   - If missing, the agent should ask before installing, or redirect you to
+     the official installer.
+3. **Which Microsoft Entra tenant should be used?**
+   - Any tenant where Work IQ is enabled and where you can grant admin
+     consent.
+4. **Which account will create the app registration?**
+   - The account needs **Global Administrator** rights (or *Privileged Role
+     Admin* / *Cloud Application Admin*) to grant admin consent for the
+     delegated `WorkIQAgent.Ask` permission.
+5. **Should the app read configuration from `.env.local` or `/settings`?**
+   - Recommended: `.env.local` for a repeatable setup.
+   - Alternative: `/settings` UI for quick, throwaway demos.
+
+### Scout prompt
+
+Paste this into Microsoft Scout (or any AI coding agent):
+
+```text
+Install the Work IQ API Demonstrator locally from:
+https://github.com/timoleo23/WorkIQ-API-Client
+
+Guide me step by step.
+
+Before making changes, ask me to confirm:
+1. The local folder where the repo should be cloned.
+2. Whether you may install missing dependencies such as Node.js, npm, or git.
+3. Which Microsoft Entra tenant to use.
+4. Which account will be used for the Entra app registration.
+
+App registration requirements:
+- Platform: Single-page application
+- Redirect URI: http://localhost:3000/auth-callback
+- Delegated API permission: WorkIQAgent.Ask
+  (API "Work IQ", App ID 0b1715fd-f4bf-4c63-b16d-5be31f9847c2)
+- Grant admin consent for the tenant.
+
+Then:
+1. Clone the repo.
+2. Run npm install.
+3. Copy .env.example to .env.local.
+4. Fill NEXT_PUBLIC_ENTRA_TENANT_ID and NEXT_PUBLIC_ENTRA_CLIENT_ID.
+5. Run npm run build.
+6. Run npm run dev.
+7. Open http://localhost:3000.
+8. Verify the /rest page with a first Work IQ question.
+
+Do not commit .env.local.
+Do not change the redirect URI unless I explicitly ask.
+```
+
+### Step-by-step install flow (PowerShell)
+
+```powershell
+git clone https://github.com/timoleo23/WorkIQ-API-Client.git
+cd WorkIQ-API-Client
+npm install
+Copy-Item .env.example .env.local
+npm run build
+npm run dev
+```
+
+Then either edit `.env.local` directly, or open
+<http://localhost:3000/settings> and configure:
+
+```ini
+NEXT_PUBLIC_ENTRA_TENANT_ID=<tenant-id-or-domain>
+NEXT_PUBLIC_ENTRA_CLIENT_ID=<entra-app-client-id>
+```
+
+### Entra app registration checklist
+
+1. Open <https://entra.microsoft.com>
+2. Go to **App registrations** → **New registration**
+3. Use:
+   - Name: `Work IQ API Demonstrator (local)`
+   - Supported account types: `Accounts in this organizational directory only`
+   - Platform: `Single-page application`
+   - Redirect URI: `http://localhost:3000/auth-callback`
+4. Copy:
+   - **Application (client) ID** → `NEXT_PUBLIC_ENTRA_CLIENT_ID`
+   - **Directory (tenant) ID** → `NEXT_PUBLIC_ENTRA_TENANT_ID`
+5. Go to **API permissions** → **Add a permission**
+6. Add:
+   - API: **Work IQ** (App ID `0b1715fd-f4bf-4c63-b16d-5be31f9847c2`)
+   - Delegated permission: **`WorkIQAgent.Ask`**
+7. Click **Grant admin consent** (requires Global Admin)
+8. Sign in to the local app with a user from the same tenant who has the
+   Microsoft 365 data Work IQ should reason over.
 
 ---
 
@@ -237,6 +297,35 @@ only.
 
 ---
 
+## Security status — Next.js dependency
+
+Earlier revisions of this repo pinned `next@14.2.18`, which is flagged by
+`npm audit` for known vulnerabilities. The current `package.json` and lockfile
+are pinned to the safest tested version on the Next 14 line:
+
+```json
+"next": "14.2.35"
+```
+
+This avoids an unplanned major migration while keeping the local demonstrator
+on a known Next 14 build. However, as of 2026-06-30, `npm audit` still reports
+Next.js advisories against the Next 14 line and proposes a breaking upgrade to
+Next 16. Treat a clean public release as requiring a dedicated Next 16 migration
+and validation pass.
+
+If you cloned an older copy of this repo, apply the patch:
+
+```powershell
+npm install next@14.2.35
+npm audit
+npm run build
+```
+
+If `npm audit` still reports Next.js advisories, do not use `npm audit fix --force`
+blindly. Plan and test the Next major-version migration instead.
+
+---
+
 ## Architecture
 
 ```
@@ -281,6 +370,28 @@ Work IQ service → response streamed back to the page.
 | The assistant reply shows raw JSON in the chat bubble                | Outdated build — pull latest, restart `npm run dev`. The `MarkdownLite` renderer auto-parses string bodies.                                                                                                                     |
 | `npm run dev` fails on Windows with `EPERM` on `.next/`              | Stop any running dev server, delete `.next/`, re-run.                                                                                                                                                                           |
 | No tools shown on `/mcp`                                             | `tools/list` returned empty — usually a tenant that doesn't yet have Work IQ MCP rolled out. Try again after a few minutes.                                                                                                     |
+| `npm audit` reports `next@14.2.x` is vulnerable                      | See [Security status — Next.js dependency](#security-status--nextjs-dependency). A fully clean audit currently requires a tested Next major-version migration.                                                                     |
+| `next dev` fails with a Tailwind error or `NODE_ENV` warning         | `NODE_ENV` is set to a non-standard value. See [`next dev` fails with Tailwind or `NODE_ENV` warning](#next-dev-fails-with-tailwind-or-node_env-warning) below.                                                                  |
+
+#### `next dev` fails with Tailwind or `NODE_ENV` warning
+
+Make sure `NODE_ENV` is **not** set to a non-standard value (Next.js expects
+`development`, `production`, or `test`).
+
+PowerShell:
+
+```powershell
+Remove-Item Env:\NODE_ENV -ErrorAction SilentlyContinue
+npm run dev
+```
+
+If `next dev` still fails, fall back to a local production server:
+
+```powershell
+npm run build
+$env:NODE_ENV = "production"
+npm run start
+```
 
 ---
 
@@ -294,6 +405,9 @@ Work IQ service → response streamed back to the page.
 - **Delegated-only.** Work IQ rejects app-only tokens. Every request to the
   service carries a delegated user token; the proxy never adds, caches, or
   rewrites tokens beyond forwarding.
+- **Proxy hardening.** The server proxy uses a server-only `WORKIQ_BASE_URL`,
+  validates that it is an HTTPS origin, only forwards allowlisted request
+  headers, and only returns allowlisted upstream response headers to the UI.
 - **No third-party telemetry.** The app does not call analytics, A/B, or
   feature-flag services.
 - **No service principal secrets needed.** A SPA app registration has no

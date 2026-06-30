@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WORKIQ_BASE_URL } from "@/lib/workiq-config";
 
+const FORWARD_HEADER_ALLOWLIST = new Set(["a2a-version"]);
+const RESPONSE_HEADER_ALLOWLIST = new Set(["content-type", "request-id", "x-ms-request-id"]);
+const ALLOWED_METHODS = new Set(["GET", "POST", "PATCH", "DELETE"]);
+const ALLOWED_PATH_PREFIXES = ["/rest/", "/a2a/", "/.well-known/"];
+
 /**
  * Proxy générique pour relayer les appels vers `workiq.svc.cloud.microsoft`.
  * Le client envoie le token Entra dans `Authorization`. Le serveur le transmet
@@ -27,8 +32,15 @@ export async function POST(req: NextRequest) {
   if (!method || !path) {
     return NextResponse.json({ error: "method and path are required" }, { status: 400 });
   }
+  const normalizedMethod = method.toUpperCase();
+  if (!ALLOWED_METHODS.has(normalizedMethod)) {
+    return NextResponse.json({ error: "method is not allowed" }, { status: 400 });
+  }
   if (!path.startsWith("/")) {
     return NextResponse.json({ error: "path must start with /" }, { status: 400 });
+  }
+  if (!ALLOWED_PATH_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+    return NextResponse.json({ error: "path is not allowed" }, { status: 400 });
   }
 
   const auth = req.headers.get("authorization");
@@ -41,14 +53,14 @@ export async function POST(req: NextRequest) {
 
   const url = `${WORKIQ_BASE_URL}${path}`;
   const init: RequestInit = {
-    method,
+    method: normalizedMethod,
     headers: {
       Authorization: auth,
       Accept: "application/json",
-      ...headers
+      ...filterHeaders(headers, FORWARD_HEADER_ALLOWLIST)
     }
   };
-  if (body !== undefined && method !== "GET" && method !== "HEAD") {
+  if (body !== undefined && normalizedMethod !== "GET") {
     (init.headers as Record<string, string>)["Content-Type"] ||= "application/json";
     init.body = typeof body === "string" ? body : JSON.stringify(body);
   }
@@ -95,7 +107,7 @@ export async function POST(req: NextRequest) {
       statusText: upstream.statusText,
       elapsedMs,
       url,
-      headers: Object.fromEntries(upstream.headers.entries()),
+      headers: filterHeaders(Object.fromEntries(upstream.headers.entries()), RESPONSE_HEADER_ALLOWLIST),
       body: parsed
     },
     {
@@ -103,4 +115,15 @@ export async function POST(req: NextRequest) {
       headers: { "X-Workiq-Upstream-Status": String(upstream.status) }
     }
   );
+}
+
+function filterHeaders(headers: Record<string, string>, allowlist: Set<string>): Record<string, string> {
+  const filtered: Record<string, string> = {};
+  for (const [name, value] of Object.entries(headers)) {
+    const normalized = name.toLowerCase();
+    if (allowlist.has(normalized)) {
+      filtered[name] = value;
+    }
+  }
+  return filtered;
 }

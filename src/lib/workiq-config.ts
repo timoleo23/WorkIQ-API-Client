@@ -1,5 +1,20 @@
-export const WORKIQ_BASE_URL =
-  process.env.NEXT_PUBLIC_WORKIQ_BASE_URL ?? "https://workiq.svc.cloud.microsoft";
+const DEFAULT_WORKIQ_BASE_URL = "https://workiq.svc.cloud.microsoft";
+
+export function getWorkIqBaseUrl(): string {
+  const raw = process.env.WORKIQ_BASE_URL ?? DEFAULT_WORKIQ_BASE_URL;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error("WORKIQ_BASE_URL must be a valid HTTPS URL.");
+  }
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password) {
+    throw new Error("WORKIQ_BASE_URL must be an HTTPS origin without credentials.");
+  }
+  return parsed.origin;
+}
+
+export const WORKIQ_BASE_URL = getWorkIqBaseUrl();
 
 export const WORKIQ_SCOPE = "api://workiq.svc.cloud.microsoft/WorkIQAgent.Ask";
 
