@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Make pre/json viewer nicer */
+.json-viewer {
+  @apply font-mono text-xs leading-relaxed whitespace-pre-wrap break-words;
+}
