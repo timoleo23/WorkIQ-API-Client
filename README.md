@@ -87,13 +87,13 @@ Work IQ service requires.
 
 You can have an AI coding agent (Microsoft Scout, GitHub Copilot Chat,
 Claude, Cursor, etc.) clone and configure the app end-to-end. Open your
-agent and paste the prompt below, replacing `<REPO_URL>` with the GitHub URL
-of this repository.
+agent and paste the prompt below.
 
 > **Prompt to paste in Microsoft Scout (or any AI coding agent):**
 >
 > ```
-> Install the Work IQ API Demonstrator locally from <REPO_URL>.
+> Install the Work IQ API Demonstrator locally from
+> https://github.com/timoleo23/WorkIQ-API-Client.
 >
 > Follow these steps:
 > 1. Clone the repo and run `npm install` at the project root.
@@ -148,8 +148,8 @@ interactive browser session and Global Admin privileges for consent).
 
 ```bash
 # 1. Clone
-git clone <REPO_URL> workiq-api-demonstrator
-cd workiq-api-demonstrator
+git clone https://github.com/timoleo23/WorkIQ-API-Client.git
+cd WorkIQ-API-Client
 
 # 2. Install dependencies
 npm install
