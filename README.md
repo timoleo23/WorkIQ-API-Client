@@ -45,6 +45,8 @@ delegated Entra access token (acquired browser-side via MSAL). This avoids
 CORS issues while keeping the strictly delegated-permission model the
 Work IQ service requires.
 
+![App Home Page](/images/home.png)
+
 ---
 
 ## Functional specifications
